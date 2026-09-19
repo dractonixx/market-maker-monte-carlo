@@ -1,0 +1,4 @@
+# Results in results/ were generated with Python 3.14, numpy 2.5.3 and matplotlib 3.11.2.
+numpy>=1.26
+matplotlib>=3.7
+pytest>=8.0
