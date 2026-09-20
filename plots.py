@@ -30,6 +30,7 @@ from matplotlib.ticker import (  # noqa: E402
 )
 
 if TYPE_CHECKING:
+    from monte_carlo import MonteCarloResult
     from session import SessionResult
     from sweep import SweepPoint, SweepResult
 
@@ -338,6 +339,36 @@ def plot_sweep(sweep: SweepResult, out_dir: Path | str) -> list[str]:
     for name, plot in charts.items():
         plot(sweep, out_dir / name)
     return list(charts)
+
+
+def plot_pnl_distribution(results: dict[str, MonteCarloResult], path: Path | str) -> None:
+    """P&L distribution of one or more strategies evaluated on the same settings."""
+    fig, axes = _figure(4.6)
+    ax = axes[0, 0]
+    first = next(iter(results.values()))
+    lo, hi = np.quantile(np.concatenate([r.pnl for r in results.values()]), [0.002, 0.998])
+    bins = np.linspace(lo, hi, 61)
+
+    for mode, result in results.items():
+        color = MODE_COLOR.get(mode, MODE_COLOR["inventory-aware"])
+        ax.hist(result.pnl, bins, histtype="stepfilled", color=color, alpha=BAND_ALPHA, lw=0)
+        ax.hist(result.pnl, bins, histtype="step", color=color, lw=LINE,
+                label=f"{MODE_NAME.get(mode, mode)}: mean {_money(result.mean_pnl, 1, signed=True)} · "
+                      f"Sharpe {result.sharpe:.2f} · ruin {result.risk_of_ruin:.1%}")
+    ax.axvline(-first.config.loss_limit, color=INK_2, lw=0.8, zorder=1)
+    ax.annotate("loss limit", (-first.config.loss_limit, 0), xycoords=("data", "axes fraction"),
+                xytext=(-4, 4), textcoords="offset points", ha="right", va="bottom", color=INK_2,
+                fontsize=8.5)
+    ax.axvline(0, color=AXIS, lw=0.8, zorder=1)
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: _money(v)))
+    ax.set_xlabel("Session P&L")
+    ax.set_ylabel("Sessions")
+    ax.margins(y=0.12)
+    ax.legend(loc="upper left")
+    _headline(fig, "Distribution of session P&L",
+              f"{first.n_trials:,} independent sessions per strategy at the current settings, "
+              f"base spread {_money(first.config.market_maker.base_spread, 2)}.")
+    _save(fig, path)
 
 
 # ----------------------------------------------------------------------------- one session

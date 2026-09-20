@@ -1,0 +1,4 @@
+# Optional: only needed for the local dashboard (dashboard.py).
+# The simulator itself stays dependency-light; see requirements.txt.
+-r requirements.txt
+streamlit>=1.30

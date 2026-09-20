@@ -40,6 +40,7 @@ theory predicts ([robustness](#robustness)).
 - [Why the optimum is where it is](#why-the-optimum-is-where-it-is)
 - [Robustness](#robustness)
 - [Running it](#running-it)
+- [Dashboard](#dashboard)
 - [Project layout](#project-layout)
 - [Assumptions and limitations](#assumptions-and-limitations)
 - [References](#references)
@@ -293,6 +294,9 @@ python robustness.py --trials 5000  # the robustness tables above, ~2 min
 python sweep.py --param inventory_penalty   # sweep a different strategy parameter
 ```
 
+There is also a local dashboard for exploring the model interactively; see
+[Dashboard](#dashboard).
+
 `sweep.py` accepts `--param` (`base_spread`, `inventory_penalty`, `spread_widening`,
 `max_inventory`), `--values`, `--modes`, `--seed` and `--out`. Results are deterministic for a given
 seed. The committed results were generated with Python 3.14, numpy 2.5.3 and matplotlib 3.11.2.
@@ -306,6 +310,33 @@ and reproducibility (every Monte Carlo trial replays exactly, results do not dep
 Each was checked by deliberately breaking the corresponding piece of the model and confirming that
 the test fails.
 
+## Dashboard
+
+A local dashboard drives the same engine, for poking at the model without editing code:
+
+```bash
+pip install -r requirements-dashboard.txt
+```
+```bash
+streamlit run dashboard.py
+```
+
+It opens at http://localhost:8501 with the market and strategy settings in the sidebar
+(volatility, mean reversion, order-flow parameters, base spread, inventory penalty, widening,
+position limit, loss limit) and three tabs:
+
+- **One session:** one market traded by both bots side by side, with the price, inventory and P&L
+  chart and a per-bot breakdown of where the P&L came from.
+- **Monte Carlo:** thousands of sessions per bot at the current settings. Mean P&L, Sharpe-like
+  ratio and risk of ruin with confidence intervals, plus the two P&L distributions.
+- **Spread sweep:** the full sweep over a spread range you choose, with the same charts and the
+  same written findings the command line produces, and the theoretical optimum for comparison.
+
+Nothing is re-implemented for the dashboard: it calls `session.py`, `monte_carlo.py` and
+`sweep.py` and shows the charts from `plots.py`, so at the default settings and seed it
+reproduces the numbers above exactly. Results are cached, so moving a slider back and forth is
+instant.
+
 ## Project layout
 
 | File | Purpose |
@@ -318,6 +349,7 @@ the test fails.
 | [`sweep.py`](sweep.py) | Parameter sweep, paired statistics, findings, CSV |
 | [`plots.py`](plots.py) | All charts |
 | [`robustness.py`](robustness.py) | Re-runs the sweep across inventory penalties and market conditions |
+| [`dashboard.py`](dashboard.py) | Local Streamlit dashboard over the same engine |
 | [`tests/test_sanity.py`](tests/test_sanity.py) | Sanity tests |
 | [`results/`](results) | Generated charts, tables and summaries |
 
